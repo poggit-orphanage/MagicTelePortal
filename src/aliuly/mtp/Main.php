@@ -7,6 +7,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
 use pocketmine\event\Listener;
 use pocketmine\Player;
+use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
 use pocketmine\math\Vector3;
@@ -38,9 +39,9 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 		$defaults = [
 			"version" => $this->getDescription()->getVersion(),
 			"max-dist" => 8,
-			"border" => Block::NETHER_BRICKS,
-			"center" => Block::STILL_WATER,
-			"corner" => Block::NETHER_BRICKS_STAIRS,
+			"border" => Block::NETHER_BRICK_BLOCK,
+			"center" => Block::PORTAL,
+			"corner" => Block::NETHER_BRICK_STAIRS,
 		];
 		$cfg = (new Config($this->getDataFolder()."config.yml",
 										  Config::YAML,$defaults))->getAll();
@@ -51,9 +52,6 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 
 		$this->portals=(new Config($this->getDataFolder()."portals.yml",
 											Config::YAML,[]))->getAll();
-		if ($this->getServer()->getPluginManager()->getPlugin("FastTransfer")){
-			$this->getLogger()->info(TextFormat::GREEN.mc::_("FastTransfer available!"));
-		}
 	}
 	private function checkLevel($w) {
 		if (!$this->getServer()->isLevelGenerated($w)) return null;
@@ -69,7 +67,7 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 				$ft_server = explode(":",$args[0],2);
 				if (count($ft_server) == 2 && !empty($ft_server[0]) &&
 					 is_numeric($ft_server[1])) {
-					// This is a Fast Transfer target!
+					// This is a Transfer target!
 					return $ft_server;
 				}
 				list($world) = $args;
@@ -79,25 +77,25 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 			case 3:
 				list($x,$y,$z) = $args;
 				if (is_numeric($x) && is_numeric($y) && is_numeric($z)) {
-					return new Vector3($x,$y,$z);
+					return new Vector3((float) $x, (float) $y, (float) $z);
 				}
 				return null;
 			case 4:
 				list($world,$x,$y,$z) = $args;
 				$l = $this->checkLevel($world);
 				if ($l && is_numeric($x) && is_numeric($y) && is_numeric($z)) {
-					return new Position($x,$y,$z,$l);
+					return new Position((int) $x, (int) $y, (int) $z,$l);
 				}
 				return null;
 		}
 		return null;
 	}
 
-	protected function targetPos($pos,$dir) {
+	protected function targetPos(Player $pos,$dir) {
 		$lv = $pos->getLevel();
 		for($start=new Vector3($pos->getX(),$pos->getY(),$pos->getZ());
 			 $start->distance($pos) < $this->max_dist ;
-			 $pos = $pos->add($dir)) {
+			 $pos = $pos->add($dir->getX(),$dir->getY(),$dir->getZ())) {
 			$block = $lv->getBlock($pos->floor());
 			if ($block->getId() != 0) break;
 		}
@@ -177,8 +175,8 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 			}
 		}
 
-		$bb1 = [ $x-$x_off, $y, $z-$z_off, $x+$x_off+1, $y+4,$z+$z_off+1 ];
-		$bb2 = [ $x-$x_off*2, $y, $z-$z_off*2, $x+$x_off*2+1, $y+5,$z+$z_off*2+1 ];
+		$bb1 = [ $x-$x_off, (float) $y, $z-$z_off, $x+$x_off+1, (float) $y+4,$z+$z_off+1 ];
+		$bb2 = [ $x-$x_off*2, (float) $y, $z-$z_off*2, $x+$x_off*2+1, (float) $y+5,$z+$z_off*2+1 ];
 		return [$bb1,$bb2];
 	}
 
@@ -189,7 +187,7 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 	}
 
 
-	public function onCommand(CommandSender $sender, Command $cmd, $label, array $args) {
+	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $args) :bool{
 		switch($cmd->getName()) {
 			case "mtp":
 				if (!MPMU::inGame($sender)) return true;
@@ -199,9 +197,10 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 					$sender->sendMessage(TextFormat::RED.mc::_("Invalid target for portal"));
 					return true;
 				}
-				$bl = $this->targetPos($sender,$sender->getDirectionVector());
-				list($bb1,$bb2) = $this->buildPortal($bl,$sender->getDirectionVector());
-				$lv = $sender->getLevel()->getName();
+                $player = Server::getInstance()->getPlayerExact($sender->getName());
+				$bl = $this->targetPos($player,$player->getDirectionVector());
+				list($bb1,$bb2) = $this->buildPortal($bl,$player->getDirectionVector());
+				$lv = $player->getLevel()->getName();
 				if (!isset($this->portals[$lv])) $this->portals[$lv] = [];
 				$this->portals[$lv][] = [ $bb1, $bb2, $args ];
 				$this->saveCfg();
@@ -261,26 +260,19 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 			$pl->teleport($dest);
 			return;
 		}
-		// If it is not a position... It is a FAST TRANSFER!
+		// If it is not a position... It is a TRANSFER!
 
-		$ft = $this->getServer()->getPluginManager()->getPlugin("FastTransfer");
-		if (!$ft) {
-			$this->getLogger()->error(TextFormat::RED.mc::_("FAST TRANSFER NOT INSTALLED"));
-			$pl->sendMessage(mc::_("Nothing happens!"));
-			$pl->sendMessage(TextFormat::RED.mc::_("Somebody removed FastTransfer!"));
-			return;
-		}
 		// First we teleport to spawn to make sure that we do not enter
 		// this server in the portal location!
 		$spawn = $pl->getLevel()->getSafeSpawn();
 		$pl->teleport($spawn);
 
 		list($addr,$port) = $dest;
-		$this->getLogger()->info(TextFormat::RED.mc::_("FastTransfer being used hope it works!"));
+		$this->getLogger()->info(TextFormat::RED.mc::_("Transfer being used hope it works!"));
 		$this->getLogger()->info(mc::_("- Player: %1% => %2%:%3%",
 												 $pl->getName(),$addr,$port));
 
-		$ft->transferPlayer($pl,$addr,$port);
+		$pl->transfer($addr,$port);
 	}
 
 	/**

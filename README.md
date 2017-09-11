@@ -6,7 +6,6 @@
 * Dependency Plugins: N/A
 * PocketMine-MP version: 1.4 - API 1.10.0
 * DependencyPlugins: -
-* OptionalPlugins: FastTransfer
 * Categories: Fun
 * Plugin Access: Commands, Data Saving, World Editing
 

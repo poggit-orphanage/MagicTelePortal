@@ -1,10 +1,10 @@
 main: aliuly\mtp\Main
-api: 1.10.0
+api: [3.0.0-ALPHA7]
 load: POSTWORLD
 
 name: MagicTelePortal
 description: A simple portal plugin
-version: 1.3.2
+version: 1.3.2-1.alpha7
 author: aliuly
 
 commands:
