@@ -4,5 +4,5 @@ branches:
 projects:
   MagicTelePortal:
     path: ""
-    icon: media/portal-icon.jpg
+    icon: portal-icon.png
 ...
