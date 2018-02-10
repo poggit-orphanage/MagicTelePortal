@@ -277,9 +277,9 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 
 	/**
 	 * @priority HIGH
+	 * @ignoreCancelled true
 	 */
 	public function onBlockBreak(BlockBreakEvent $ev){
-		if ($ev->isCancelled()) return;
 		$bl = $ev->getBlock();
 		$l = $bl->getLevel();
 		if (!$l) return;
