@@ -19,7 +19,7 @@
 */
 namespace aliuly\mtp\common;
 
-use pocketmine\scheduler\PluginTask;
+use pocketmine\scheduler\Task;
 use pocketmine\plugin\Plugin;
 
 /**
@@ -27,7 +27,7 @@ use pocketmine\plugin\Plugin;
  * The last parameter in the callback will be this object
  *
  */
-class PluginCallbackTask extends PluginTask{
+class PluginCallbackTask extends Task{
 
 	/** @var callable */
 	protected $callable;
@@ -41,7 +41,7 @@ class PluginCallbackTask extends PluginTask{
 	 * @param array    $args
 	 */
 	public function __construct(Plugin $owner, callable $callable, array $args = []){
-		parent::__construct($owner);
+		$this->plugin = $owner;
 		$this->callable = $callable;
 		$this->args = $args;
 		$this->args[] = $this;

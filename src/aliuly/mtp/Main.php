@@ -242,7 +242,7 @@ class Main extends PluginBase implements CommandExecutor,Listener {
 					if ($this->tweak[$n][0] > $now) return;
 				}
 				$this->tweak[$n] = [ $now + 3, $dest ];
-				$this->getServer()->getScheduler()->scheduleDelayedTask(
+				$this->getScheduler()->scheduleDelayedTask(
 					new PluginCallbackTask($this,[$this,"portalActiveSg1"],[$n]),
 					1);
 				return;
