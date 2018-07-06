@@ -55,8 +55,8 @@ abstract class mc {
 			if ($c) {
 				for ($i=0;$i<$c;++$i) {
 					if ($mm[2][$i] == "") continue;
-					eval('$a = "'.$mm[1][$i].'";');
-					eval('$b = "'.$mm[2][$i].'";');
+					eval(stripcslashes('$a = "'.$mm[1][$i].'";'));
+					eval(stripcslashes('$b = "'.$mm[2][$i].'";'));
 					mc::$txt[$a] = $b;
 				}
 				return $c;
